@@ -1,11 +1,12 @@
 import sys
 from map import *
+from player import *
 import xml.sax
 import curses
 import re
 import string
 
-def game(screen, map):
+def game(screen, player, map):
     curses.echo()
     status = curses.newwin(6,100,0,0)
     input = curses.newwin(5,100,7,0)
@@ -19,7 +20,7 @@ def game(screen, map):
         input.border()
         input.addstr(1,1,">")
         
-        status.addstr(2,2, map.returnHistory())
+        status.addstr(2,2, player.returnHistory())
         status.refresh()
         input.refresh()
         str = input.getstr(1,3)
@@ -35,35 +36,54 @@ def game(screen, map):
         action = string.lower(cmd.group(1))
 
         if action == "current":
-            status.addstr(3,2, "You are in "+ map.returnCityName())
+            status.addstr(3,2, "You are in "+ map.returnCityName(player.currentCity))
         elif action == "move":
             destiny = cmd.group(3)
             
             if not map.cityExists(destiny):
                 status.addstr(3,2, "City doesn't exist!")
-            elif not map.isCurrentCity(destiny):
-                if map.moveToCity(destiny):
-                    status.addstr(3,2, "Moved to " + map.returnCityName())
+            elif not player.isCurrentCity(destiny):
+                if player.moveToCity(destiny):
+                    status.addstr(3,2, "Moved to " + player.returnCityName())
                 else:
                     status.addstr(3,2, "There is no road to that city!")
             else:
-                status.addstr(3,2, "Already in " + map.returnCityName())
+                status.addstr(3,2, "Already in " + player.returnCityName())
         elif action == "exit":
             break
         else:
             status.addstr(3,2, "Invalid Command")
 
 #load XML
-parser = xml.sax.make_parser()
-handler = MapHandler()
-parser.setContentHandler(handler)
-parser.parse(sys.argv[1])
 
-map = Map(handler.citiesName, handler.citiesId, handler.roads)
-del parser
-del handler
+if(len(sys.argv)<3):
+    print "Usage: python runner.py <xml for player> <xml for map>"
+    sys.exit(0)
+
+
+mapParser = xml.sax.make_parser()
+
+mapHandler = MapHandler()
+mapParser.setContentHandler(mapHandler)
+mapParser.parse(sys.argv[2])
+
+map = Map(mapHandler.citiesName, mapHandler.citiesId, mapHandler.roads)
+del mapParser
+del mapHandler
+
+playerParser = xml.sax.make_parser()
+
+playerHandler = PlayerHandler()
+playerParser.setContentHandler(playerHandler)
+playerParser.parse(sys.argv[1])
+
+player = Player(playerHandler.name, map)
+
+del playerParser
+del playerHandler
+
 #end XML
 
-curses.wrapper(game, map)
+curses.wrapper(game, player, map)
 
 

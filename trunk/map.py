@@ -6,53 +6,14 @@ class Map:
         self.citiesName = citiesName
         self.citiesId = citiesId
         self.roads = roads
-        self.currentCity = 0
-        self.history = []
-
-    def updateHistory(self):
-        if len(self.history) > 5:
-            self.history.pop(0)
-        self.history.append(self.citiesId[str(self.currentCity)])
         
 
-    def returnHistory(self):
-        string = ""
-        for city in self.history:
-            string += city + " > "
-        return string
+    def returnRoads(self, city):
+        return self.roads[city]
 
-    def moveToCity(self, move):
-        moveTmp = string.lower(move)
-        if self.citiesName.has_key(moveTmp):
-            destiny = self.citiesName[moveTmp]
-        else:
-            destiny = string.atoi(moveTmp)
-        outRoads = self.returnRoads()
-        for road in outRoads:
-            if road == destiny:
-                self.currentCity = destiny
-                self.updateHistory()
-                return True
-        return False
+    def returnCityName(self, city):
+        return self.citiesId[str(city)]
 
-
-    def returnRoads(self):
-        return self.roads[self.currentCity]
-
-    def returnCityName(self):
-        return self.citiesId[str(self.currentCity)]
-
-    def isCurrentCity(self, city):
-        cityTmp = string.lower(city)
-        if self.citiesName.has_key(cityTmp):
-            verify = self.citiesName[cityTmp]
-        else:
-            verify = string.atoi(cityTmp)
-        if verify == self.currentCity:
-            return True
-        else:
-            return False
-    
     def cityExists(self, city):
         cityTmp = string.lower(city)
         if self.citiesName.has_key(cityTmp):
