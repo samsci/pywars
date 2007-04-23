@@ -1,0 +1,30 @@
+<map>
+    <place>
+        <id>0</id>
+        <name>Portugal</name>
+        <route>1</route>
+    </place>
+    <place>
+        <id>1</id>
+        <name>Spain</name>
+        <route>0</route>
+        <route>2</route>
+        <route>3</route>
+    </place>
+    <place>
+        <id>2</id>
+        <name>Andorra</name>
+        <route>1</route>
+    </place>
+    <place>
+        <id>3</id>
+        <name>France</name>
+        <route>1</route>
+        <route>4</route>
+    </place>
+    <place>
+        <id>4</id>
+        <name>Germany</name>
+        <route>3</route>
+    </place>
+</map>
