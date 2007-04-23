@@ -9,14 +9,19 @@ import pickle
 
 s = xmlrpclib.Server('http://localhost:8000')
 
-STATUS_SI_Y = 7
-STATUS_SI_X = 100
+STATUS_SI_Y = 20
+STATUS_SI_X = 69
 STATUS_OR_Y = 0
 STATUS_OR_X = 0
 
+PRODUCTS_SI_Y = 20
+PRODUCTS_SI_X = 30
+PRODUCTS_OR_Y = 0
+PRODUCTS_OR_X = 70
+
 INPUT_SI_Y = 5
 INPUT_SI_X = 100
-INPUT_OR_Y = 8
+INPUT_OR_Y = 21
 INPUT_OR_X = 0
 
 STATUS_MSG_Y = 4
@@ -28,25 +33,51 @@ STATUS_OUT_X = 2
 STATUS_HISTORY_Y = 2
 STATUS_HISTORY_X = 2
 
+def printProducts(player, productsWin, placeName):
+    products = pickle.loads(s.returnProducts(placeName))
+    y = 1
+    x = 1
+    productsWin.addstr(y, x, "Products in " + string.capitalize(placeName))
+    y=y+1
+    productsWin.addstr(y, x, "-"*(PRODUCTS_SI_X-2))
+    y=y+1
+    productsWin.addstr(y, x, "name\tquant\tvalue\t(you)")
+    y=y+1
+    productsWin.addstr(y, x, "-"*(PRODUCTS_SI_X-2))
+    y=y+1
+    for prod in products:
+        if player.products.has_key(prod):
+            mine = str(player.products[prod])
+        else:
+            mine = "n/a"
+        productsWin.addstr(y, x, prod + "\t" + str(products[prod].quantity) + "\t" + str(products[prod].value) + "\t" + mine)
+        y=y+1
 
 def game(screen, player):
     curses.echo()
     status = curses.newwin(STATUS_SI_Y, STATUS_SI_X, STATUS_OR_Y, STATUS_OR_X)
     input = curses.newwin(INPUT_SI_Y, INPUT_SI_X, INPUT_OR_Y, INPUT_OR_X)
+    productsCli = curses.newwin(PRODUCTS_SI_Y, PRODUCTS_SI_X, PRODUCTS_OR_Y, PRODUCTS_OR_X)
     status.border()
     input.border()
+    productsCli.border()
     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Welcome to the Game!")
 
-    command = re.compile('(\w+)(\s(\w*))?') 
+    command = re.compile('(\w+)(\s(\w*))?(\s(\w*))?') 
     while 1:
+        productsCli.clear()
+        productsCli.border()
+        printProducts(player, productsCli, player.currentPlace)                  
+        
         input.clear()
         input.border()
         input.addstr(1, 1, ">")
         
         status.addstr(STATUS_HISTORY_Y, STATUS_HISTORY_X, "History: " + player.returnHistory())
-        status.addstr(STATUS_OUT_Y, STATUS_OUT_X, "You can go to: " + s.outCitiesString(player.currentPlace.id))
+        status.addstr(STATUS_OUT_Y, STATUS_OUT_X, "You can go to: " + s.outCitiesString(player.currentPlace))
         status.refresh()
         input.refresh()
+        productsCli.refresh()
         st = input.getstr(1, 3)
 
         cmd = command.match(st)
@@ -61,7 +92,7 @@ def game(screen, player):
         
         ############### CURRENT ####################################
         if action == "current":
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You are in "+ string.capitalize(player.currentPlace.name))
+            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You are in "+ string.capitalize(player.currentPlace))
         
         ############### MOVE ####################################
         elif action == "move":
@@ -70,9 +101,8 @@ def game(screen, player):
             if not s.cityExists(destiny):
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "City doesn't exist!")
             elif not player.isCurrentCity(destiny):
-                placeTmp = s.moveToCity(player.name, player.currentPlace.name, destiny)
+                placeTmp = s.moveToCity(player.name, player.currentPlace, destiny)
                 if placeTmp:
-                    placeTmp = pickle.loads(placeTmp)
                     player.currentPlace = placeTmp
                     player.updateHistory()
                     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.returnCityName()))
@@ -81,13 +111,24 @@ def game(screen, player):
             else:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.returnCityName()))
        
+        ############### BUY ####################################
+        elif action == "buy":
+            amount = cmd.group(3)
+            prod = cmd.group(5)
+            playerTmp = s.buy(player.name, prod, int(amount))
+            if playerTmp:
+                player = pickle.loads(playerTmp)
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
+            else:
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+        
         ############### MYNAME ####################################
         elif action == "myname":
             status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your name is " + string.capitalize(player.name))
        
         ############### OTHERS ####################################
         elif action == "others":
-            others = s.otherPlayers(player.name, player.currentPlace.name)
+            others = s.otherPlayers(player.name, player.currentPlace)
             if len(others) == 0:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your are alone")
             else:

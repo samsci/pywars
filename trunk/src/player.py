@@ -5,14 +5,15 @@ class Player:
     def __init__(self, name, currentPlace, password):
         self.name = name
         self.currentPlace = currentPlace
-        self.history = [string.capitalize(self.currentPlace.name)]
+        self.history = [string.capitalize(self.currentPlace)]
         self.password = password
         self.logged = True
+        self.products = {}
 
     def updateHistory(self):
         if len(self.history) > 5:
             self.history.pop(0)
-        self.history.append(string.capitalize(self.currentPlace.name))
+        self.history.append(string.capitalize(self.currentPlace))
         
 
     def returnHistory(self):
@@ -23,11 +24,11 @@ class Player:
 
    
     def returnCityName(self):
-        return self.currentPlace.name
+        return self.currentPlace
 
     def isCurrentCity(self, city):
         cityTmp = string.lower(city)
-        if self.currentPlace.name == cityTmp or str(self.currentPlace.id) == cityTmp:
+        if self.currentPlace == cityTmp:
             return True
         else:
             return False
