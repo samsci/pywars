@@ -2,25 +2,40 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer
 import sys
 import xml.sax
 from map import Map, MapHandler
+from products import Product, ProductsHandler
+import random
     
 
-if(len(sys.argv)<2):
-    print "Usage: python pywars_server.py <xml for map>"
+if(len(sys.argv)<3):
+    print "Usage: python pywars_server.py <xml for map> <xmf for products>"
     sys.exit(0)
 
 
 mapParser = xml.sax.make_parser()
+productsParser = xml.sax.make_parser()
 
 mapHandler = MapHandler()
+productsHandler = ProductsHandler()
+
 mapParser.setContentHandler(mapHandler)
+productsParser.setContentHandler(productsHandler)
+
 mapParser.parse(sys.argv[1])
+productsParser.parse(sys.argv[2])
 
 map = Map(mapHandler.citiesName, mapHandler.roads)
 
+for placeName in map.placesByName:
+    place = map.placesByName[placeName]
+    for prod in productsHandler.products:
+        prodTmp = productsHandler.products[prod]
+        product = Product(prod, prodTmp["value"], random.randint(int(prodTmp["min"]), int(prodTmp["max"])))
+        place.products[prod] = product
 
 del mapParser
 del mapHandler
-
+del productsParser
+del productsHandler
 
 # Create server
 server = SimpleXMLRPCServer(("localhost", 8000))

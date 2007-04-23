@@ -22,9 +22,13 @@ class Map:
             else:
                 player = False
         else:
-            player = Player(playerName, self.placesById["0"], password)
+            place = self.placesById["0"]
+            player = Player(playerName, place.name, password)
             self.players[playerName] = player
         return pickle.dumps(player)
+    
+    def returnProducts(self, placeName):
+        return pickle.dumps(self.placesByName[placeName].products)
     
     def returnRoads(self, city):
         return self.placesById[str(city)].roads
@@ -34,7 +38,7 @@ class Map:
 
     def outCitiesString(self, place):
         buff = ""
-        roads = self.placesById[str(place)].roads
+        roads = self.placesByName[place].roads
         for road in roads:
             buff += string.capitalize(self.placesById[str(road)].name) + " "
         return buff
@@ -46,6 +50,24 @@ class Map:
         else:
             return False
         
+    def buy(self, playerName, productName, amount):
+        player = self.players[playerName]
+        place = self.placesByName[self.players[playerName].currentPlace]
+        if place.products.has_key(productName):
+            product = place.products[productName]
+            if product.quantity >= amount:
+                bought = amount
+            else:
+                bought = product.quantity
+            if player.products.has_key(productName):
+                player.products[productName] += bought
+            else:
+                player.products[productName] = bought
+            product.quantity -= bought
+            return pickle.dumps(player)
+        else:
+            return False
+        
     def moveToCity(self, player, origin, dest):
         destTmp = string.lower(dest)
        
@@ -54,19 +76,16 @@ class Map:
         outRoads = self.placesByName[origin].roads
         for road in outRoads:
             if road == destiny:
-                placeOrig = self.placesByName[origin]
-                placeOrig.players.remove(player)
                 place = self.placesById[str(destiny)]
-                place.players.append(player)
-                
-                return pickle.dumps(place)
+                self.players[player].currentPlace = place.name
+                return place.name
         return False
     
     def otherPlayers(self, playerName, placeName):
         ret = []
         for key in self.players:
             other = self.players[key]
-            if other.logged and other.currentPlace.name == placeName and other.name != playerName:
+            if other.logged and other.currentPlace == placeName and other.name != playerName:
                 ret.append(other)
         return ret
     
