@@ -1,5 +1,5 @@
 import sys
-from player import Player, PlayerHandler
+from player import PlayerHandler
 import xml.sax
 import curses
 import re
@@ -58,9 +58,12 @@ def game(screen, player):
         
         
         action = string.lower(cmd.group(1))
-
+        
+        ############### CURRENT ####################################
         if action == "current":
             status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You are in "+ string.capitalize(player.currentPlace.name))
+        
+        ############### MOVE ####################################
         elif action == "move":
             destiny = cmd.group(3)
             
@@ -77,8 +80,12 @@ def game(screen, player):
                     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city!")
             else:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.returnCityName()))
+       
+        ############### MYNAME ####################################
         elif action == "myname":
             status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your name is " + string.capitalize(player.name))
+       
+        ############### OTHERS ####################################
         elif action == "others":
             others = s.otherPlayers(player.name, player.currentPlace.name)
             if len(others) == 0:
@@ -88,9 +95,17 @@ def game(screen, player):
                 for other in others:
                     out += other + " "
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, out)
+       
+        ############### HELP ####################################
+        elif action == "help":
+            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Commands are: current; move <city>; myname; others; exit")
+        
+        ############### EXIT ####################################
         elif action == "exit":
-            s.leaveGame(player.name, player.currentPlace.name)
+            s.logout(player.name, player.password )
             break
+
+        ############### INVALID ####################################
         else:
             status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Invalid Command")
 
@@ -106,8 +121,12 @@ playerHandler = PlayerHandler()
 playerParser.setContentHandler(playerHandler)
 playerParser.parse(sys.argv[1])
 
-place = pickle.loads(s.getStartPlace(playerHandler.name))
-player = Player(playerHandler.name, place)
+tryLogin = s.login(playerHandler.name, playerHandler.password)
+if tryLogin:
+    player = pickle.loads(tryLogin)
+else:
+    print "Login failed: Wrong password"
+    sys.exit(0)
 
 del playerParser
 del playerHandler

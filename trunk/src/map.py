@@ -1,3 +1,4 @@
+from player import Player
 import xml.sax.handler
 import string
 from place import *
@@ -7,17 +8,24 @@ class Map:
     def __init__(self, citiesName, roads):
         self.placesByName = {}
         self.placesById = {}
-        self.players = []
+        self.players = {}
 
         for city in citiesName:
             place = Place(city, citiesName[city], roads[citiesName[city]])
             self.placesByName[city] = place
             self.placesById[str(citiesName[city])] = place
 
-    def getStartPlace(self, playerName):
-        self.placesById["0"].players.append(playerName)
-        return pickle.dumps(self.placesById["0"])
-
+    def login(self, playerName, password):
+        if self.players.has_key(playerName):
+            if self.players[playerName].password == password:
+                player = self.players[playerName]
+            else:
+                player = False
+        else:
+            player = Player(playerName, self.placesById["0"], password)
+            self.players[playerName] = player
+        return pickle.dumps(player)
+    
     def returnRoads(self, city):
         return self.placesById[str(city)].roads
 
@@ -56,14 +64,20 @@ class Map:
     
     def otherPlayers(self, playerName, placeName):
         ret = []
-        for other in self.placesByName[placeName].players:
-            if(other != playerName):
+        for key in self.players:
+            other = self.players[key]
+            if other.logged and other.currentPlace.name == placeName and other.name != playerName:
                 ret.append(other)
         return ret
     
-    def leaveGame(self, playerName, placeName):
-        self.placesByName[placeName].players.remove(playerName)
-        return True
+    def logout(self, playerName, password):
+        if self.players[playerName].password == password:
+            self.players[playerName].logged = False
+            return True
+        else:
+            return False
+    
+        
 
 class MapHandler(xml.sax.handler.ContentHandler):
     def __init__(self):

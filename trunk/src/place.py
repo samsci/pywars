@@ -3,4 +3,3 @@ class Place:
         self.name = name
         self.id = id
         self.roads = roads
-        self.players = []

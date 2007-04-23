@@ -2,10 +2,12 @@ import xml.sax.handler
 import string
 
 class Player:
-    def __init__(self, name, currentPlace):
+    def __init__(self, name, currentPlace, password):
         self.name = name
         self.currentPlace = currentPlace
         self.history = [string.capitalize(self.currentPlace.name)]
+        self.password = password
+        self.logged = True
 
     def updateHistory(self):
         if len(self.history) > 5:
@@ -35,12 +37,16 @@ class Player:
 class PlayerHandler(xml.sax.handler.ContentHandler):
     def __init__(self):
         self.inName = 0
+        self.inPass = 0
         self.name = ""
+        self.password = ""
 
     def startElement(self, name, attributes):
         self.buffer= ""
         if name == "name":
             self.inName = 1
+        elif name == "password":
+            self.inPass = 1
 
     def characters(self, data):
         self.buffer +=data
@@ -49,3 +55,6 @@ class PlayerHandler(xml.sax.handler.ContentHandler):
         if name == "name":
             self.inName = 0
             self.name = self.buffer
+        if name == "password":
+            self.inPass = 0
+            self.password = self.buffer
