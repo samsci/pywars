@@ -1,0 +1,14 @@
+<products>
+	<product>
+		<name>bolos</name>
+		<value>100</value>
+		<maxquantity>100</maxquantity>
+		<minquantity>10</minquantity>
+	</product>
+	<product>
+		<name>coves</name>
+		<value>50</value>
+		<maxquantity>1000</maxquantity>
+		<minquantity>200</minquantity>
+	</product>
+</products>

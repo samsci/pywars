@@ -1,7 +1,7 @@
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 import sys
-from map import Map, MapHandler
 import xml.sax
+from map import Map, MapHandler
     
 
 if(len(sys.argv)<2):
