@@ -2,8 +2,9 @@ import xml.sax.handler
 import string
 
 class Player:
-    def __init__(self, name, currentPlace, password):
+    def __init__(self, name, currentPlace, password, money):
         self.name = name
+        self.money = money
         self.currentPlace = currentPlace
         self.history = [string.capitalize(self.currentPlace)]
         self.password = password
@@ -11,7 +12,7 @@ class Player:
         self.products = {}
 
     def updateHistory(self):
-        if len(self.history) > 5:
+        if len(self.history) > 2:
             self.history.pop(0)
         self.history.append(string.capitalize(self.currentPlace))
         

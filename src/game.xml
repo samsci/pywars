@@ -1,0 +1,7 @@
+<game>
+	<name>Twolegs Servu</name>
+	<maxplayers>32</maxplayers>
+	<startmoney>1000</startmoney>
+	<startcity>0</startcity>
+	<minutesperturn>2</minutesperturn>
+</game>

@@ -8,7 +8,6 @@ class Map:
     def __init__(self, citiesName, roads):
         self.placesByName = {}
         self.placesById = {}
-        self.players = {}
 
         for city in citiesName:
             place = Place(city, citiesName[city], roads[citiesName[city]])
@@ -30,71 +29,22 @@ class Map:
     def returnProducts(self, placeName):
         return pickle.dumps(self.placesByName[placeName].products)
     
-    def returnRoads(self, city):
-        return self.placesById[str(city)].roads
+    def returnRoads(self, placeName):
+        return self.placesByName[placeName].roads
 
-    def returnCityName(self, city):
-        return string.capitalize(self.placesById[str(city)].name)
-
-    def outCitiesString(self, place):
+    def outCitiesString(self, placeName):
         buff = ""
-        roads = self.placesByName[place].roads
+        roads = self.placesByName[placeName].roads
         for road in roads:
             buff += string.capitalize(self.placesById[str(road)].name) + " "
         return buff
 
-    def cityExists(self, city):
-        cityTmp = string.lower(city)
-        if self.placesByName.has_key(cityTmp):
+    def cityExists(self, placeName):
+        if self.placesByName.has_key(placeName):
             return True
         else:
             return False
-        
-    def buy(self, playerName, productName, amount):
-        player = self.players[playerName]
-        place = self.placesByName[self.players[playerName].currentPlace]
-        if place.products.has_key(productName):
-            product = place.products[productName]
-            if product.quantity >= amount:
-                bought = amount
-            else:
-                bought = product.quantity
-            if player.products.has_key(productName):
-                player.products[productName] += bought
-            else:
-                player.products[productName] = bought
-            product.quantity -= bought
-            return pickle.dumps(player)
-        else:
-            return False
-        
-    def moveToCity(self, player, origin, dest):
-        destTmp = string.lower(dest)
-       
-        destiny = self.placesByName[destTmp].id
 
-        outRoads = self.placesByName[origin].roads
-        for road in outRoads:
-            if road == destiny:
-                place = self.placesById[str(destiny)]
-                self.players[player].currentPlace = place.name
-                return place.name
-        return False
-    
-    def otherPlayers(self, playerName, placeName):
-        ret = []
-        for key in self.players:
-            other = self.players[key]
-            if other.logged and other.currentPlace == placeName and other.name != playerName:
-                ret.append(other)
-        return ret
-    
-    def logout(self, playerName, password):
-        if self.players[playerName].password == password:
-            self.players[playerName].logged = False
-            return True
-        else:
-            return False
     
         
 
