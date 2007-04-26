@@ -1,4 +1,5 @@
 import sys
+from gameexceptions import NotEnoughMoney
 from player import PlayerHandler
 import xml.sax
 import curses
@@ -10,7 +11,7 @@ import pickle
 s = xmlrpclib.Server('http://localhost:8000')
 
 STATUS_SI_Y = 20
-STATUS_SI_X = 69
+STATUS_SI_X = 44
 STATUS_OR_Y = 0
 STATUS_OR_X = 0
 
@@ -24,6 +25,11 @@ INPUT_SI_X = 100
 INPUT_OR_Y = 21
 INPUT_OR_X = 0
 
+PLAYER_SI_Y = 20
+PLAYER_SI_X = 24
+PLAYER_OR_Y = 0
+PLAYER_OR_X = 45
+
 STATUS_MSG_Y = 4
 STATUS_MSG_X = 2
 
@@ -33,11 +39,20 @@ STATUS_OUT_X = 2
 STATUS_HISTORY_Y = 2
 STATUS_HISTORY_X = 2
 
-def printProducts(player, productsWin, placeName):
-    products = pickle.loads(s.returnProducts(placeName))
+def printPlayer(player, playerWin):
     y = 1
     x = 1
-    productsWin.addstr(y, x, "Products in " + string.capitalize(placeName))
+    playerWin.addstr(y, x, string.capitalize(player.name) + " properties")
+    y = y+1
+    playerWin.addstr(y, x, "-"*(PLAYER_SI_X-2))
+    y = y+1
+    playerWin.addstr(y, x, "money = " + str(player.money))
+    
+def printProducts(player, productsWin):
+    products = pickle.loads(s.returnProducts(player.name, player.password))
+    y = 1
+    x = 1
+    productsWin.addstr(y, x, "Products in " + string.capitalize(player.currentPlace))
     y=y+1
     productsWin.addstr(y, x, "-"*(PRODUCTS_SI_X-2))
     y=y+1
@@ -58,26 +73,33 @@ def game(screen, player):
     status = curses.newwin(STATUS_SI_Y, STATUS_SI_X, STATUS_OR_Y, STATUS_OR_X)
     input = curses.newwin(INPUT_SI_Y, INPUT_SI_X, INPUT_OR_Y, INPUT_OR_X)
     productsCli = curses.newwin(PRODUCTS_SI_Y, PRODUCTS_SI_X, PRODUCTS_OR_Y, PRODUCTS_OR_X)
+    playerCli = curses.newwin(PLAYER_SI_Y, PLAYER_SI_X, PLAYER_OR_Y, PLAYER_OR_X)
     status.border()
     input.border()
     productsCli.border()
+    playerCli.border()
     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Welcome to the Game!")
 
     command = re.compile('(\w+)(\s(\w*))?(\s(\w*))?') 
     while 1:
         productsCli.clear()
         productsCli.border()
-        printProducts(player, productsCli, player.currentPlace)                  
+        printProducts(player, productsCli)
+        
+        playerCli.clear()
+        playerCli.border()
+        printPlayer(player, playerCli)
         
         input.clear()
         input.border()
         input.addstr(1, 1, ">")
         
         status.addstr(STATUS_HISTORY_Y, STATUS_HISTORY_X, "History: " + player.returnHistory())
-        status.addstr(STATUS_OUT_Y, STATUS_OUT_X, "You can go to: " + s.outCitiesString(player.currentPlace))
+        status.addstr(STATUS_OUT_Y, STATUS_OUT_X, "You can go to: " + s.outCitiesString(player.name, player.password))
         status.refresh()
         input.refresh()
         productsCli.refresh()
+        playerCli.refresh()
         st = input.getstr(1, 3)
 
         cmd = command.match(st)
@@ -98,24 +120,29 @@ def game(screen, player):
         elif action == "move":
             destiny = cmd.group(3)
             
-            if not s.cityExists(destiny):
+            if not s.cityExists(player.name, player.password, destiny):
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "City doesn't exist!")
             elif not player.isCurrentCity(destiny):
-                placeTmp = s.moveToCity(player.name, player.currentPlace, destiny)
+                placeTmp = s.moveToCity(player.name, player.password, destiny)
                 if placeTmp:
                     player.currentPlace = placeTmp
                     player.updateHistory()
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.returnCityName()))
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.currentPlace))
                 else:
                     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city!")
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.returnCityName()))
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.currentPlace))
        
         ############### BUY ####################################
         elif action == "buy":
             amount = cmd.group(3)
             prod = cmd.group(5)
-            playerTmp = s.buy(player.name, prod, int(amount))
+            try:
+                playerTmp = s.buy(player.name,player.password, prod, int(amount))
+            except xmlrpclib.Fault, e:
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, e.faultString)
+                continue
+
             if playerTmp:
                 player = pickle.loads(playerTmp)
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
@@ -128,7 +155,7 @@ def game(screen, player):
        
         ############### OTHERS ####################################
         elif action == "others":
-            others = s.otherPlayers(player.name, player.currentPlace)
+            others = s.otherPlayers(player.name, player.password)
             if len(others) == 0:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your are alone")
             else:
