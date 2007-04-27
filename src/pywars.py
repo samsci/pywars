@@ -74,24 +74,24 @@ def game(screen, player):
     input = curses.newwin(INPUT_SI_Y, INPUT_SI_X, INPUT_OR_Y, INPUT_OR_X)
     productsCli = curses.newwin(PRODUCTS_SI_Y, PRODUCTS_SI_X, PRODUCTS_OR_Y, PRODUCTS_OR_X)
     playerCli = curses.newwin(PLAYER_SI_Y, PLAYER_SI_X, PLAYER_OR_Y, PLAYER_OR_X)
-    status.border()
-    input.border()
-    productsCli.border()
-    playerCli.border()
+    status.box()
+    input.box()
+    productsCli.box()
+    playerCli.box()
     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Welcome to the Game!")
 
     command = re.compile('(\w+)(\s(\w*))?(\s(\w*))?') 
     while 1:
         productsCli.clear()
-        productsCli.border()
+        productsCli.box()
         printProducts(player, productsCli)
         
         playerCli.clear()
-        playerCli.border()
+        playerCli.box()
         printPlayer(player, playerCli)
         
         input.clear()
-        input.border()
+        input.box()
         input.addstr(1, 1, ">")
         
         status.addstr(STATUS_HISTORY_Y, STATUS_HISTORY_X, "History: " + player.returnHistory())
@@ -107,7 +107,7 @@ def game(screen, player):
         if not cmd:
             continue
         status.clear()
-        status.border()
+        status.box()
         
         
         action = string.lower(cmd.group(1))
@@ -129,7 +129,7 @@ def game(screen, player):
                     player.updateHistory()
                     status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.currentPlace))
                 else:
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city!")
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city or you already moved this turn")
             else:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.currentPlace))
        
@@ -148,6 +148,23 @@ def game(screen, player):
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
             else:
                 status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+        
+        ############### SELL #####################################
+        elif action == "sell":
+            amount = cmd.group(3)
+            prod = cmd.group(5)
+            playerTmp = s.sell(player.name, player.password, prod, int(amount))
+            
+            if playerTmp:
+                player = pickle.loads(playerTmp)
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
+            else:
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+        
+        ############### PRINT TURN ################################
+        elif action == "turn":
+            turn = s.currentTurn(player.name, player.password)
+            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Current turn: " + str(turn))
         
         ############### MYNAME ####################################
         elif action == "myname":

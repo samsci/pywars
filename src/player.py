@@ -10,6 +10,7 @@ class Player:
         self.password = password
         self.logged = True
         self.products = {}
+        self.turn = 0
 
     def updateHistory(self):
         if len(self.history) > 2:
