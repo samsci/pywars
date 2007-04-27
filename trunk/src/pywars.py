@@ -16,12 +16,12 @@ STATUS_OR_Y = 0
 STATUS_OR_X = 0
 
 PRODUCTS_SI_Y = 20
-PRODUCTS_SI_X = 30
+PRODUCTS_SI_X = 50
 PRODUCTS_OR_Y = 0
 PRODUCTS_OR_X = 70
 
 INPUT_SI_Y = 5
-INPUT_SI_X = 100
+INPUT_SI_X = 120
 INPUT_OR_Y = 21
 INPUT_OR_X = 0
 
@@ -56,16 +56,19 @@ def printProducts(player, productsWin):
     y=y+1
     productsWin.addstr(y, x, "-"*(PRODUCTS_SI_X-2))
     y=y+1
-    productsWin.addstr(y, x, "name\tquant\tvalue\t(you)")
+    productsWin.addstr(y, x, "name\tquant\tvalue\t(you)\t(value)")
     y=y+1
     productsWin.addstr(y, x, "-"*(PRODUCTS_SI_X-2))
     y=y+1
     for prod in products:
         if player.products.has_key(prod):
             mine = str(player.products[prod].quantity)
+            val = str(player.products[prod].value)
         else:
             mine = "n/a"
-        productsWin.addstr(y, x, prod + "\t" + str(products[prod].quantity) + "\t" + str(products[prod].value) + "\t" + mine)
+            val = "n/a"
+        productsWin.addstr(y, x, prod + "\t" + str(products[prod].quantity) + "\t"
+                     + str(products[prod].value) + "\t" + mine + "\t" + val)
         y=y+1
 
 def game(screen, player):
