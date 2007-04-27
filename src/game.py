@@ -121,6 +121,9 @@ class Game:
                 raise xmlrpclib.Fault(1,"You need " + str(moneyNeeded-player.money) + " more credits")
                 
             if player.products.has_key(productName):
+                quant = player.products[productName].quantity
+                val = player.products[productName].value
+                player.products[productName].value = ((quant*val)+(bought*product.value))/(quant+bought)
                 player.products[productName].quantity += bought
             else:
                 player.products[productName] = Product(productName, product.value, bought)
