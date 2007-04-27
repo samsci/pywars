@@ -5,17 +5,41 @@ from place import *
 from gameexceptions import NotEnoughMoney
 import pickle
 import xmlrpclib
+import time
 
 class Game:  
-    def __init__(self, name, maxPlayers, startMoney, startCity, minutesPerTurn, map):
+    def __init__(self, name, maxPlayers, startMoney, startCity, secondsPerTurn, map):
         self.name = name
         self.maxPlayers = maxPlayers
         self.startMoney = startMoney
         self.startCity = startCity
-        self.minutesPerTurn = minutesPerTurn
+        self.secondsPerTurn = secondsPerTurn
         self.map = map
         self.players = {}
-
+        self.turn = 0
+        self.lastTime = time.time()
+        self.playersMoved = []
+        
+    def processMove(self, playerName):
+        if playerName in self.playersMoved:
+            return False
+        else:
+            self.playersMoved.append(playerName)
+            return True
+        
+    def processTurn(self):
+        now = time.time()
+        diff = self.lastTime + self.secondsPerTurn
+        if diff < now:
+            self.lastTime = now
+            self.turn += 1
+            self.playersMoved = []
+            
+    def currentTurn(self, playerName, password):
+        if not self.validate(playerName, password):
+            return False
+        return self.turn
+            
     def validate(self, playerName, password):
         if self.players.has_key(playerName):
             if self.players[playerName].password == password:
@@ -89,9 +113,33 @@ class Game:
             return pickle.dumps(player)
         else:
             return False
+    
+    def sell(self, playerName, password, productName, amount):
+        if not self.validate(playerName, password):
+            return False
         
+        player = self.players[playerName]
+        place = self.map.placesByName[player.currentPlace]
+        
+        if place.products.has_key(productName) and player.products.has_key(productName):
+            placeProduct = place.products[productName]
+            if amount <= player.products[productName]:
+                sold = amount
+            else:
+                sold = player.products[productName]
+                
+            player.products[productName] -= sold
+            player.money += sold * int(placeProduct.value)
+            placeProduct.quantity += sold
+            return pickle.dumps(player)
+        else:
+            return False
+    
     def moveToCity(self, playerName, password, dest):
         if not self.validate(playerName, password):
+            return False
+            
+        if not self.processMove(playerName):
             return False
         
         player = self.players[playerName]
@@ -135,13 +183,13 @@ class GameHandler(xml.sax.handler.ContentHandler):
         self.inMax = 0
         self.inMoney = 0
         self.inCity = 0
-        self.inMinutes = 0
+        self.inSeconds = 0
 
         self.name = ""
         self.max = ""
         self.money = ""
         self.city = ""
-        self.minutes = ""
+        self.seconds = ""
         
     def startElement(self, name, attributes):
         self.buffer = ""
@@ -153,8 +201,8 @@ class GameHandler(xml.sax.handler.ContentHandler):
             self.inMoney = 1
         elif name == "startcity":
             self.inCity = 1
-        elif name == "minutesperturn":
-            self.inMinutes = 1
+        elif name == "secondsperturn":
+            self.inSeconds = 1
 
     def characters(self, data):
         self.buffer += data
@@ -172,7 +220,7 @@ class GameHandler(xml.sax.handler.ContentHandler):
         elif name == "startcity":
             self.inCity = 0
             self.city = int(self.buffer)
-        elif name == "minutesperturn":
-            self.inMinutes = 0
-            self.minutes = int(self.buffer)
+        elif name == "secondsperturn":
+            self.inSeconds = 0
+            self.seconds = int(self.buffer)
 

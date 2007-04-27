@@ -37,7 +37,7 @@ for placeName in map.placesByName:
         product = Product(prod, prodTmp["value"], random.randint(int(prodTmp["min"]), int(prodTmp["max"])))
         place.products[prod] = product
         
-game = Game(gameHandler.name, gameHandler.max, gameHandler.money, gameHandler.city, gameHandler.minutes, map)
+game = Game(gameHandler.name, gameHandler.max, gameHandler.money, gameHandler.city, gameHandler.seconds, map)
 
 del mapParser
 del mapHandler
@@ -55,4 +55,7 @@ server.register_introspection_functions()
 server.register_instance(game)
 
 # Run the server's main loop
-server.serve_forever()
+while True:
+    game.processTurn()
+    server.handle_request()
+#server.serve_forever()
