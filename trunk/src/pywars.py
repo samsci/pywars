@@ -62,7 +62,7 @@ def printProducts(player, productsWin):
     y=y+1
     for prod in products:
         if player.products.has_key(prod):
-            mine = str(player.products[prod])
+            mine = str(player.products[prod].quantity)
         else:
             mine = "n/a"
         productsWin.addstr(y, x, prod + "\t" + str(products[prod].quantity) + "\t" + str(products[prod].value) + "\t" + mine)
@@ -119,52 +119,69 @@ def game(screen, player):
         ############### MOVE ####################################
         elif action == "move":
             destiny = cmd.group(3)
-            
-            if not s.cityExists(player.name, player.password, destiny):
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "City doesn't exist!")
-            elif not player.isCurrentCity(destiny):
-                placeTmp = s.moveToCity(player.name, player.password, destiny)
-                if placeTmp:
-                    player.currentPlace = placeTmp
-                    player.updateHistory()
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.currentPlace))
+            if destiny:      
+                if not s.cityExists(player.name, player.password, destiny):
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "City doesn't exist!")
+                elif not player.isCurrentCity(destiny):
+                    placeTmp = s.moveToCity(player.name, player.password, destiny)
+                    if placeTmp:
+                        player.currentPlace = placeTmp
+                        player.updateHistory()
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.currentPlace))
+                    else:
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city or you already moved this turn")
                 else:
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city or you already moved this turn")
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.currentPlace))
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.currentPlace))
-       
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: move <place>")
+           
         ############### BUY ####################################
         elif action == "buy":
             amount = cmd.group(3)
             prod = cmd.group(5)
-            try:
-                playerTmp = s.buy(player.name,player.password, prod, int(amount))
-            except xmlrpclib.Fault, e:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, e.faultString)
-                continue
+            if amount and prod:
+                ver = re.compile('buy\s\d+\s\w+') 
+                verify = ver.match(cmd.group(0))
+                if verify:
+                    try:
+                        playerTmp = s.buy(player.name,player.password, prod, int(amount))
+                    except xmlrpclib.Fault, e:
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, e.faultString)
+                        continue
 
-            if playerTmp:
-                player = pickle.loads(playerTmp)
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
+                    if playerTmp:
+                        player = pickle.loads(playerTmp)
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod].quantity) + " " + prod + "s")
+                    else:
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+                else:
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: quantity must be a number")
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
-        
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: buy <quantity> <product>")
         ############### SELL #####################################
         elif action == "sell":
             amount = cmd.group(3)
             prod = cmd.group(5)
-            playerTmp = s.sell(player.name, player.password, prod, int(amount))
-            
-            if playerTmp:
-                player = pickle.loads(playerTmp)
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod]) + " " + prod + "s")
+            if amount and prod:
+                ver = re.compile('sell\s\d+\s\w+') 
+                verify = ver.match(cmd.group(0))
+                if verify:
+                    playerTmp = s.sell(player.name, player.password, prod, int(amount))
+                    
+                    if playerTmp:
+                        player = pickle.loads(playerTmp)
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod].quantity) + " " + prod + "s")
+                    else:
+                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+                else:
+                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: quantity must be a number")
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: sell <quantity> <product>")
         
-        ############### PRINT TURN ################################
+        ############### TURN ################################
         elif action == "turn":
             turn = s.currentTurn(player.name, player.password)
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Current turn: " + str(turn))
+            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, str(turn[1]) + " seconds left in turn: " + str(turn[0]))
         
         ############### MYNAME ####################################
         elif action == "myname":
@@ -183,7 +200,7 @@ def game(screen, player):
        
         ############### HELP ####################################
         elif action == "help":
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Commands are: current; move <city>; myname; others; exit")
+            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Commands are: current; move <city>; myname; turn; others; exit")
         
         ############### EXIT ####################################
         elif action == "exit":

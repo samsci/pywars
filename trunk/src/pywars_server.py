@@ -5,6 +5,7 @@ from map import Map, MapHandler
 from products import Product, ProductsHandler
 from game import Game, GameHandler
 import random
+import select
     
 
 if(len(sys.argv)<4):
@@ -34,7 +35,7 @@ for placeName in map.placesByName:
     place = map.placesByName[placeName]
     for prod in productsHandler.products:
         prodTmp = productsHandler.products[prod]
-        product = Product(prod, prodTmp["value"], random.randint(int(prodTmp["min"]), int(prodTmp["max"])))
+        product = Product(prod, int(prodTmp["value"]), random.randint(int(prodTmp["min"]), int(prodTmp["max"])))
         place.products[prod] = product
         
 game = Game(gameHandler.name, gameHandler.max, gameHandler.money, gameHandler.city, gameHandler.seconds, map)
@@ -56,6 +57,14 @@ server.register_instance(game)
 
 # Run the server's main loop
 while True:
-    game.processTurn()
-    server.handle_request()
+    ready_to_read, ready_to_write, in_error = select.select(
+                      [server.socket], 
+                      [], 
+                      [], 
+                      1)
+    if len(ready_to_read) == 0:
+        game.processTurn()
+    else:
+        game.processTurn()
+        server.handle_request()
 #server.serve_forever()
