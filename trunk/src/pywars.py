@@ -10,6 +10,8 @@ import pickle
 
 s = xmlrpclib.Server('http://localhost:8000')
 
+lastMessages = []
+
 STATUS_SI_Y = 20
 STATUS_SI_X = 44
 STATUS_OR_Y = 0
@@ -30,7 +32,7 @@ PLAYER_SI_X = 24
 PLAYER_OR_Y = 0
 PLAYER_OR_X = 45
 
-STATUS_MSG_Y = 4
+STATUS_MSG_Y = STATUS_SI_Y + STATUS_OR_Y - 2
 STATUS_MSG_X = 2
 
 STATUS_OUT_Y = 3
@@ -38,6 +40,19 @@ STATUS_OUT_X = 2
 
 STATUS_HISTORY_Y = 2
 STATUS_HISTORY_X = 2
+
+def processInput(message):
+    return message.split()
+
+def printMessage(message, statusWin):
+    sizeOfMessages = STATUS_SI_Y - 6
+    if len(lastMessages) > sizeOfMessages:
+        lastMessages.pop()
+    lastMessages.insert(0,message)
+    y = STATUS_MSG_Y
+    for message in lastMessages:
+        statusWin.addstr(y, STATUS_MSG_X, message[0:STATUS_SI_X-4])
+        y = y - 1
 
 def printPlayer(player, playerWin):
     y = 1
@@ -81,9 +96,8 @@ def game(screen, player):
     input.box()
     productsCli.box()
     playerCli.box()
-    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Welcome to the Game!")
+    printMessage("Welcome to the Game!", status)
 
-    command = re.compile('(\w+)(\s(\w*))?(\s(\w*))?') 
     while 1:
         productsCli.clear()
         productsCli.box()
@@ -99,13 +113,14 @@ def game(screen, player):
         
         status.addstr(STATUS_HISTORY_Y, STATUS_HISTORY_X, "History: " + player.returnHistory())
         status.addstr(STATUS_OUT_Y, STATUS_OUT_X, "You can go to: " + s.outCitiesString(player.name, player.password))
+        status.addstr(STATUS_OUT_Y+1, STATUS_OUT_X, "-"*(STATUS_SI_X-4))
         status.refresh()
         input.refresh()
         productsCli.refresh()
         playerCli.refresh()
         st = input.getstr(1, 3)
 
-        cmd = command.match(st)
+        cmd = processInput(st)
 
         if not cmd:
             continue
@@ -113,97 +128,105 @@ def game(screen, player):
         status.box()
         
         
-        action = string.lower(cmd.group(1))
+        action = string.lower(cmd[0])
+        args = cmd[1:]
         
         ############### CURRENT ####################################
         if action == "current":
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You are in "+ string.capitalize(player.currentPlace))
+            printMessage("You are in "+ string.capitalize(player.currentPlace), status)
         
         ############### MOVE ####################################
         elif action == "move":
-            destiny = cmd.group(3)
-            if destiny:      
+            if len(args) == 1:
+                destiny = args[0]
                 if not s.cityExists(player.name, player.password, destiny):
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "City doesn't exist!")
+                    printMessage("City doesn't exist!", status)
                 elif not player.isCurrentCity(destiny):
                     placeTmp = s.moveToCity(player.name, player.password, destiny)
                     if placeTmp:
                         player.currentPlace = placeTmp
                         player.updateHistory()
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Moved to " + string.capitalize(player.currentPlace))
+                        printMessage("Moved to " + string.capitalize(player.currentPlace), status)
                     else:
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "There is no road to that city or you already moved this turn")
+                        printMessage("No road or already moved this turn", status)
                 else:
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Already in " + string.capitalize(player.currentPlace))
+                    printMessage("Already in " + string.capitalize(player.currentPlace), status)
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: move <place>")
+                printMessage("Command error: move <place>", status)
            
         ############### BUY ####################################
         elif action == "buy":
-            amount = cmd.group(3)
-            prod = cmd.group(5)
-            if amount and prod:
-                ver = re.compile('buy\s\d+\s\w+') 
-                verify = ver.match(cmd.group(0))
-                if verify:
+            if len(args) == 2 :
+                amount = args[0]
+                prod = args[1]
+
+                if args[0].isdigit():
                     try:
                         playerTmp = s.buy(player.name,player.password, prod, int(amount))
                     except xmlrpclib.Fault, e:
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, e.faultString)
+                        printMessage(e.faultString, status)
                         continue
 
                     if playerTmp:
                         player = pickle.loads(playerTmp)
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod].quantity) + " " + prod + "s")
+                        printMessage("You now have " + str(player.products[prod].quantity) + " " + prod + "s", status)
                     else:
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+                        printMessage("Product doesn't exist", status)
                 else:
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: quantity must be a number")
+                    printMessage("Command error: quantity must be a number", status)
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: buy <quantity> <product>")
+                printMessage("Command error: buy <quantity> <product>", status)
         ############### SELL #####################################
         elif action == "sell":
-            amount = cmd.group(3)
-            prod = cmd.group(5)
-            if amount and prod:
-                ver = re.compile('sell\s\d+\s\w+') 
-                verify = ver.match(cmd.group(0))
-                if verify:
+            if len(args) == 2 :
+                amount = args[0]
+                prod = args[1]
+
+                if args[0].isdigit():
                     playerTmp = s.sell(player.name, player.password, prod, int(amount))
                     
                     if playerTmp:
                         player = pickle.loads(playerTmp)
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "You now have " + str(player.products[prod].quantity) + " " + prod + "s")
+                        printMessage("You now have " + str(player.products[prod].quantity) + " " + prod + "s", status) 
                     else:
-                        status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Product doesn't exist")
+                        printMessage("Product doesn't exist", status)
                 else:
-                    status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: quantity must be a number")
+                    printMessage("Command error: quantity must be a number", status)
             else:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Command error: sell <quantity> <product>")
+                printMessage("Command error: sell <quantity> <product>", status)
         
+        ############### SEND MESSAGE #####################################
+        #elif action == "send":
+        #    if len(args) >= 3:
+        #        message = ""
+        #        
+        #    
+        #    else:
+        #        printMessage("Command error: send <message> to <receiver>", status)
+        #
         ############### TURN ################################
         elif action == "turn":
             turn = s.currentTurn(player.name, player.password)
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, str(turn[1]) + " seconds left in turn: " + str(turn[0]))
+            printMessage(str(turn[1]) + " seconds left in turn: " + str(turn[0]), status)
         
         ############### MYNAME ####################################
         elif action == "myname":
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your name is " + string.capitalize(player.name))
+            printMessage("Your name is " + string.capitalize(player.name), status)
        
         ############### OTHERS ####################################
         elif action == "others":
             others = s.otherPlayers(player.name, player.password)
             if len(others) == 0:
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Your are alone")
+                printMessage("Your are alone", status)
             else:
                 out = "You are here with "
                 for other in others:
                     out += other + " "
-                status.addstr(STATUS_MSG_Y, STATUS_MSG_X, out)
+                printMessage(out, status)
        
         ############### HELP ####################################
         elif action == "help":
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Commands are: current; move <city>; myname; turn; others; exit")
+            printMessage("Commands are: current; move <city>; myname; turn; others; exit", status)
         
         ############### EXIT ####################################
         elif action == "exit":
@@ -212,7 +235,7 @@ def game(screen, player):
 
         ############### INVALID ####################################
         else:
-            status.addstr(STATUS_MSG_Y, STATUS_MSG_X, "Invalid Command")
+            printMessage("Invalid Command", status)
 
 #load XML
 
