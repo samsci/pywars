@@ -21,6 +21,7 @@ class Game:
         self.turn = 0
         self.lastTime = time.time()
         self.playersMoved = []
+        self.messages = {}
         
     def reevaluate(self):
         places = self.map.placesByName
@@ -48,7 +49,27 @@ class Game:
             self.playersMoved = []
             self.reevaluate()
             print("Turn changed: "+ str(self.turn))
+        
+    def sendMessage(self, playerName, password, receiver, message):
+        if not self.validate(playerName, password):
+            return False
             
+        if self.players.has_key(receiver):
+            if not self.messages.has_key(receiver):
+                self.messages[receiver] = []
+            self.messages[receiver].append(Message(playerName, receiver, message))               
+        else:
+            return False
+            
+    def receiveMessage(self, playerName, password):
+        if not self.validate(playerName, password):
+            return False
+        
+        if self.messages.has_key(playerName):
+            return pickle.dumps(self.messages[playerName].pop(0))
+        else:
+            return False
+    
     def currentTurn(self, playerName, password):
         if not self.validate(playerName, password):
             return False
