@@ -135,6 +135,25 @@ def game(screen, player):
         if action == "current":
             printMessage("You are in "+ string.capitalize(player.currentPlace), status)
         
+        ############### Fly ####################################
+        elif action == "fly":
+            if len(args)==1:
+                destiny = args[0]
+                if not s.cityExists(player.name, player.password, destiny):
+                    printMessage("City doesn't exist!", status)
+                elif not player.isCurrentCity(destiny):
+                    placeTmp = s.flyToPlace(player.name, player.password, destiny)
+                    if placeTmp:
+                        player.currentPlace = placeTmp
+                        player.updateHistory()
+                        printMessage("Flyed to " + string.capitalize(player.currentPlace), status)
+                    else:
+                        printMessage("No plane or already moved this turn", status)
+                else:
+                    printMessage("Already in " + string.capitalize(player.currentPlace), status)
+            else:
+                printMessage("Command error: fly <place>", status)
+        
         ############### MOVE ####################################
         elif action == "move":
             if len(args) == 1:
@@ -196,15 +215,28 @@ def game(screen, player):
                 printMessage("Command error: sell <quantity> <product>", status)
         
         ############### SEND MESSAGE #####################################
-        #elif action == "send":
-        #    if len(args) >= 3:
-        #        message = ""
-        #        
-        #    
-        #    else:
-        #        printMessage("Command error: send <message> to <receiver>", status)
-        #
+        elif action == "send":
+            if len(args) >= 2:
+                receiver = args[0]
+                message = " "
+                message = message.join(args[1:])
+                out = s.sendMessage(player.name, player.password, receiver, message)
+                if out:
+                    printMessage("Message Sent", status)
+                else:
+                    printMessage("The player "+receiver+" doesn't exist", status)
+            else:
+                printMessage("Command error: send <receiver> <message>", status)
+        ############### RECEIVE MESSAGE #####################################
+        elif action == "receive":
+            message = s.receiveMessage(player.name, player.password)
+            if message:
+                message = pickle.loads(message)
+                printMessage(message.sender + " said: " + message.message, status)
+            else:
+                printMessage("You have no new messages", status)
         ############### TURN ################################
+        
         elif action == "turn":
             turn = s.currentTurn(player.name, player.password)
             printMessage(str(turn[1]) + " seconds left in turn: " + str(turn[0]), status)

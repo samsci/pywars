@@ -35,7 +35,7 @@ for placeName in map.placesByName:
     place = map.placesByName[placeName]
     for prod in productsHandler.products:
         prodTmp = productsHandler.products[prod]
-        product = Product(prod, int(prodTmp["value"]), random.randint(int(prodTmp["min"]), int(prodTmp["max"])))
+        product = Product(prod, int(prodTmp["value"]), random.randint(int(prodTmp["min"]), int(prodTmp["max"])),prodTmp["can"])
         place.products[prod] = product
         
 game = Game(gameHandler.name, gameHandler.max, gameHandler.money, gameHandler.city, gameHandler.seconds, map)

@@ -11,4 +11,10 @@
 		<maxquantity>1000</maxquantity>
 		<minquantity>200</minquantity>
 	</product>
+	<product can="fly">
+	    <name>cessna</name>
+	    <value>100</value>
+	    <maxquantity>5</maxquantity>
+	    <minquantity>0</minquantity>
+	</product>
 </products>
