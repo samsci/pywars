@@ -2,10 +2,11 @@ import xml.sax.handler
 
 
 class Product:
-    def __init__(self, name, value, quantity):
+    def __init__(self, name, value, quantity, attributes):
         self.name = name
         self.value = value
         self.quantity = quantity
+        self.attributes = attributes
 
 
 class ProductsHandler(xml.sax.handler.ContentHandler):
@@ -19,6 +20,7 @@ class ProductsHandler(xml.sax.handler.ContentHandler):
         self.min = ""
         self.max = ""
         self.products = {}
+        self.att = None
 
     def startElement(self, name, attributes):
         self.buffer= ""
@@ -30,6 +32,8 @@ class ProductsHandler(xml.sax.handler.ContentHandler):
             self.inMax = 1
         elif name == "minquantity":
             self.inMin = 1
+        elif name == "product":
+            self.att = attributes.get(u"can")
 
     def characters(self, data):
         self.buffer +=data
@@ -52,3 +56,5 @@ class ProductsHandler(xml.sax.handler.ContentHandler):
             self.products[self.name]["value"] = self.value
             self.products[self.name]["max"] = self.max
             self.products[self.name]["min"] = self.min
+            self.products[self.name]["can"] = self.att
+            self.att = None

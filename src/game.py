@@ -3,6 +3,7 @@ import xml.sax.handler
 import string
 from place import *
 from products import *
+from message import *
 from gameexceptions import NotEnoughMoney
 import pickle
 import xmlrpclib
@@ -57,7 +58,8 @@ class Game:
         if self.players.has_key(receiver):
             if not self.messages.has_key(receiver):
                 self.messages[receiver] = []
-            self.messages[receiver].append(Message(playerName, receiver, message))               
+            self.messages[receiver].append(Message(playerName, receiver, message))
+            return True       
         else:
             return False
             
@@ -66,7 +68,10 @@ class Game:
             return False
         
         if self.messages.has_key(playerName):
-            return pickle.dumps(self.messages[playerName].pop(0))
+            if len(self.messages[playerName]) >= 1:
+                return pickle.dumps(self.messages[playerName].pop(0))
+            else:
+                return False
         else:
             return False
     
@@ -147,7 +152,7 @@ class Game:
                 player.products[productName].value = ((quant*val)+(bought*product.value))/(quant+bought)
                 player.products[productName].quantity += bought
             else:
-                player.products[productName] = Product(productName, product.value, bought)
+                player.products[productName] = Product(productName, product.value, bought, product.attributes)
             product.quantity -= bought
 
             player.money -= moneyNeeded
@@ -196,6 +201,24 @@ class Game:
                 player.updateHistory()
                 return place.name
         return False
+        
+    def flyToPlace(self, playerName, password, dest):
+        if not self.validate(playerName, password):
+            return False
+        
+        if not self.processMove(playerName):
+            return False
+            
+        player = self.players[playerName]
+        
+        if player.canFly():  
+            destTmp = string.lower(dest)
+            destiny = self.map.placesByName[destTmp]
+            player.currentPlace = destiny.name
+            player.updateHistory()
+            return destiny.name
+        else:
+            return False
     
     def otherPlayers(self, playerName, password):
         if not self.validate(playerName, password):

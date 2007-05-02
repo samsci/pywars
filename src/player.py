@@ -35,7 +35,13 @@ class Player:
         else:
             return False
     
-
+    def canFly(self):
+        for key in self.products:
+            product = self.products[key]
+            attributes = product.attributes
+            if attributes.find("fly") != -1:
+                return True            
+        return False
 
 class PlayerHandler(xml.sax.handler.ContentHandler):
     def __init__(self):
