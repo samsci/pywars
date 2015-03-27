@@ -1,0 +1,1 @@
+Inspired but not a copy of dopeWars written in python and curses.
